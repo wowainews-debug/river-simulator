@@ -1,22 +1,7 @@
-@import "tailwindcss";
-
-/* ── 全域樣式 ────────────────────────────────────────────── */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: #334155 transparent;
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-}
-
-::-webkit-scrollbar {
-  width: 6px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: #334155;
-  border-radius: 3px;
+  @apply bg-white text-slate-900 antialiased;
 }
