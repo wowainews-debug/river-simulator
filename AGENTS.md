@@ -43,15 +43,37 @@
 
 | 路由 | 頁面 | 優先級 |
 |:---|:---|:---:|
-| `/` | 模擬持倉總覽 | P0 |
-| `/signals` | 訊號監控 | P0 |
-| `/signals/:symbol` | 單檔訊號明細（14 組雷達圖） | P1 |
-| `/positions/:symbol` | 個股持倉 K 線 + 指標疊加 | P1 |
-| `/orders` | 委託記錄 | P1 |
-| `/options` | 選擇權監控 | P2 |
-| `/futures` | 台指期監控 | P2 |
-| `/params/:symbol` | 參數調教面板 | P2 |
-| `/settings` | 模擬設定 | P1 |
+| `/` | 🏠 模擬持倉總覽 (Dashboard) | P0 |
+| `/signals` | 🎯 訊號監控 (Signals) | P0 |
+| `/signals/:symbol` | 📊 單檔訊號明細 | P1 |
+| `/orders` | 📋 委託記錄 (Orders) | P1 |
+| `/positions/stock/:symbol` | 📈 個股持倉 K 線 + 指標疊加 | P1 |
+| `/positions/futures` | 📉 台指期監控 + K 線圖 | P1 |
+| `/positions/options` | 📊 選擇權監控 | P2 |
+| `/params/:symbol` | 🔧 參數調教面板 | P2 |
+| `/compute/stocks` | 🧠 個股運算中心 | P1 |
+| `/compute/futures` | 📈 期貨運算中心 (TAIEX V1) | P1 |
+| `/settings` | ⚙️ 模擬設定 | P1 |
+| `/status` | 🏥 系統狀態 | P1 |
+
+### 2.1 UI 組件清單
+
+| 組件 | 用途 |
+|:---|:---|
+| `TopNavBar` | 頂部導覽列（8 個主要頁面捷徑 + 即時時鐘） |
+| `KpiDashboard` / `KpiCard` | KPI 指標卡片群 |
+| `SniperTargetList` | 狙擊目標清單 |
+| `EquityCurveChart` | 權益曲線圖（Recharts） |
+| `FuturesChart` | 台指期 K 線圖 + 技術指標疊加 |
+| `TradingViewWidget` | TradingView 圖表嵌入式元件 |
+| `AiDebatePanel` | AI 辯論委員會投票結果 |
+| `AssetTogglePanel` / `AssetTabs` | 資產切換面板 |
+| `SignalSection` / `SignalTable` | 交易訊號展示 |
+| `DefenseLine2Panel` / `DefenseLine3Panel` | 防護線狀態面板 |
+| `FundCard` / `FundManager` | 資金卡片與資金管理 |
+| `Tooltip` | 通用提示框元件 |
+| `ErrorBoundary` | 🆕 全站錯誤邊界（擷取例外、提供恢復） |
+| `DebateSessionCard` | AI 辯論委員會單次會議卡片 |
 
 ---
 
