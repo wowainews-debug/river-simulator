@@ -1,35 +1,59 @@
+import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
+import { fetchParams, ParamsResponse } from "../lib/api";
 
 export default function ParamPanel() {
-  const { symbol } = useParams();
+  const { symbol } = useParams<{ symbol: string }>();
+  const [data, setData] = useState<ParamsResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!symbol) return;
+    fetchParams(symbol)
+      .then(setData)
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, [symbol]);
+
+  if (loading) {
+    return <div className="max-w-7xl mx-auto py-12 px-4 text-center text-slate-400">⏳ 載入 {symbol} 綁定參數...</div>;
+  }
+
+  const params = data?.params;
+
   return (
-    <div className="bg-slate-950 min-h-screen p-6">
-      <h1 className="text-2xl font-bold text-white mb-6">🔧 參數面板 — {symbol}</h1>
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 mb-6">
-        <h2 className="text-lg font-semibold text-slate-200 mb-3">⚙️ 已綁定參數</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left text-slate-300">
-            <thead className="text-xs uppercase bg-slate-800 text-slate-400">
-              <tr>
-                <th className="px-4 py-3">策略</th>
-                <th className="px-4 py-3">參數名稱</th>
-                <th className="px-4 py-3">最優值</th>
-                <th className="px-4 py-3">回測 Sharpe</th>
-                <th className="px-4 py-3">回測勝率</th>
-                <th className="px-4 py-3">狀態</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr className="border-b border-slate-800 text-slate-500">
-                <td className="px-4 py-3" colSpan={6}>尚無綁定參數 (需先執行 optimizer)</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+    <div className="max-w-7xl mx-auto py-6 px-4">
+      <h1 className="text-2xl font-bold text-slate-900 mb-6">🔧 參數面板 — {symbol}</h1>
+
+      <div className="bg-white border border-slate-200/80 rounded-xl p-6 mb-6">
+        <h2 className="text-lg font-semibold text-slate-700 mb-3">⚙️ 已綁定參數</h2>
+        {params && Object.keys(params).length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead className="text-xs uppercase bg-slate-50 text-slate-500 border-b border-slate-200">
+                <tr>
+                  <th className="px-4 py-3">參數名稱</th>
+                  <th className="px-4 py-3">最優值</th>
+                </tr>
+              </thead>
+              <tbody className="text-slate-700">
+                {Object.entries(params).map(([key, value]) => (
+                  <tr key={key} className="border-b border-slate-100">
+                    <td className="px-4 py-2 font-mono text-xs">{key}</td>
+                    <td className="px-4 py-2 font-mono">{value}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="text-slate-400">{data?.message || "尚無綁定參數 (需先執行 optimizer)"}</p>
+        )}
       </div>
-      <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
-        🔄 觸發重新搜尋參數
-      </button>
+
+      <p className="text-xs text-slate-400">
+        參數來源: Supabase B (<code>param_bindings</code> 表) ｜ 優化後永久綁定此標的
+      </p>
     </div>
   );
 }

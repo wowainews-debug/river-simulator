@@ -1,55 +1,82 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
+import type { SimConfig } from "../lib/api";
+import { fetchSimConfig, updateSimConfig } from "../lib/api";
+import AssetTogglePanel from "../components/AssetTogglePanel";
+import DefenseLine2Panel from "../components/DefenseLine2Panel";
+import DefenseLine3Panel from "../components/DefenseLine3Panel";
 
 export default function SettingsPage() {
-  const [capital, setCapital] = useState("1,000,000");
-  const [commission, setCommission] = useState("0.001425");
-  const [tax, setTax] = useState("0.003");
-  const [slippage, setSlippage] = useState("0.1");
-  const [isRealMode, setIsRealMode] = useState(false);
+  const [config, setConfig] = useState<SimConfig | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [savedMsg, setSavedMsg] = useState("");
+  const [dirty, setDirty] = useState(false);
+
+  useEffect(() => { loadConfig(); }, []);
+
+  async function loadConfig() {
+    try { setLoading(true); const res = await fetchSimConfig(); setConfig(res.config); }
+    catch (e: unknown) { setError(e instanceof Error ? e.message : "載入設定失敗"); }
+    finally { setLoading(false); }
+  }
+
+  const handleChange = useCallback((key: keyof SimConfig, value: boolean | number | string) => {
+    setConfig((prev) => {
+      if (!prev) return prev;
+      const next = { ...prev, [key]: value };
+      // 期貨關閉時歸零保證金
+      if (key === "futures_contract" && value === "off") next.futures_margin_reserved = 0;
+      if (key === "options_enabled" && !value) next.options_margin_reserved = 0;
+      return next;
+    });
+    setDirty(true);
+  }, []);
+
+  async function handleSave() {
+    if (!config) return;
+    try { setSaving(true); setError(""); setSavedMsg(""); await updateSimConfig(config);
+      setSavedMsg("✅ 設定已儲存成功"); setDirty(false); setTimeout(() => setSavedMsg(""), 3000); }
+    catch (e: unknown) { setError(e instanceof Error ? e.message : "儲存失敗"); }
+    finally { setSaving(false); }
+  }
+
+  if (loading) return <div className="max-w-6xl mx-auto py-6 px-4"><div className="bg-white border border-slate-200/80 rounded-xl p-8 text-center text-slate-500">載入設定中...</div></div>;
+  if (!config) return <div className="max-w-6xl mx-auto py-6 px-4"><div className="bg-white border border-rose-200 rounded-xl p-8 text-center text-rose-500">載入失敗：{error}</div></div>;
 
   return (
-    <div className="bg-slate-950 min-h-screen p-6 max-w-2xl">
-      <h1 className="text-2xl font-bold text-white mb-6">⚙️ 模擬設定</h1>
+    <div className="max-w-6xl mx-auto py-6 px-4 space-y-5">
+      <h1 className="text-xl font-bold text-slate-900">🛡️ 三道防線設定</h1>
 
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 space-y-5">
-        <div>
-          <label className="block text-sm text-slate-400 mb-1">初始資金 (TWD)</label>
-          <input type="text" value={capital} onChange={(e) => setCapital(e.target.value)}
-            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm" />
+      {/* 總權益金 */}
+      <div className="bg-white border border-blue-200 rounded-xl p-4 flex flex-wrap items-center gap-4">
+        <div className="flex-1 min-w-[200px]">
+          <label className="block text-xs font-medium text-slate-500 mb-1">總權益資金 (TWD) — 所有保證金保留額即時連動</label>
+          <input type="number" min={100000} step={10000} value={config.initial_capital}
+            onChange={(e) => handleChange("initial_capital", parseFloat(e.target.value) || 1_000_000)}
+            className="w-full max-w-xs px-3 py-2 border border-slate-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-blue-500 outline-none"
+            title="總權益資金" />
         </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm text-slate-400 mb-1">手續費率 (%)</label>
-            <input type="text" value={commission} onChange={(e) => setCommission(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm" />
-          </div>
-          <div>
-            <label className="block text-sm text-slate-400 mb-1">交易稅率 (%)</label>
-            <input type="text" value={tax} onChange={(e) => setTax(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm" />
-          </div>
+        <div className="flex items-center gap-4 text-sm">
+          <button onClick={() => handleChange("is_real_mode", !config.is_real_mode)}
+            className={`px-3 py-1 rounded-full text-xs font-medium ${config.is_real_mode ? "bg-rose-100 text-rose-700" : "bg-emerald-100 text-emerald-700"}`}>
+            {config.is_real_mode ? "🔴 實單" : "🟢 模擬"}
+          </button>
+          <span className="text-xs text-slate-400">{dirty ? "⚠ 未儲存" : "✅ 已同步"}</span>
         </div>
-        <div>
-          <label className="block text-sm text-slate-400 mb-1">滑價 (%)</label>
-          <input type="text" value={slippage} onChange={(e) => setSlippage(e.target.value)}
-            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm" />
-        </div>
+      </div>
 
-        <div className="border-t border-slate-800 pt-4">
-          <label className="flex items-center gap-3 cursor-pointer">
-            <div className={`w-12 h-6 rounded-full transition-colors ${isRealMode ? 'bg-red-600' : 'bg-slate-700'}`}
-              onClick={() => setIsRealMode(!isRealMode)}>
-              <div className={`w-5 h-5 bg-white rounded-full mt-0.5 transition-transform ${isRealMode ? 'translate-x-6' : 'translate-x-1'}`} />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-white">{isRealMode ? '🔴 真實下單模式' : '🟢 模擬下單模式'}</p>
-              <p className="text-xs text-slate-400">{isRealMode ? '訊號將由獨立下單電腦執行真實交易' : '訊號僅記錄於模擬帳戶'}</p>
-            </div>
-          </label>
-        </div>
+      {error && <div className="bg-rose-50 border border-rose-200 text-rose-700 rounded-lg p-3 text-sm">{error}</div>}
+      {savedMsg && <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-lg p-3 text-sm">{savedMsg}</div>}
 
-        <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium w-full mt-2">
-          💾 儲存設定
+      <AssetTogglePanel config={config} onChange={handleChange} />
+      <DefenseLine2Panel config={config} onChange={handleChange} />
+      <DefenseLine3Panel config={config} onChange={handleChange} />
+
+      <div className="flex justify-end">
+        <button onClick={handleSave} disabled={saving || !dirty}
+          className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white px-5 py-2 rounded-lg text-sm font-medium transition">
+          {saving ? "💾 儲存中..." : "💾 儲存全部設定"}
         </button>
       </div>
     </div>

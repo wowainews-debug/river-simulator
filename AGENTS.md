@@ -1,4 +1,9 @@
-# Agent Rules Standard (AGENTS.md) — RIVER 下單模擬器
+# 🖥️ RIVER 模擬中心 (Simulator Center) — AI 核心記憶體
+
+> **📍 當前位置：模擬中心 (`river-simulator`)** — 訊號展示、績效追蹤、下單模擬、AI 辯論視覺化前端。
+> **你在模擬中心。** 你的職責：多資產分頁 UI（個股/期貨/選擇權）、AI 辯論委員會視覺化面板、交易訊號列表與詳情、績效曲線圖 (EquityCurveChart)、KPI 儀表板、防禦線展示、資金管理員 FundManager、TradingView 圖表整合。
+> **⚠️ 若需要修改運算中心 (`river-quant-engine`) 的訊號產出邏輯，必須先向使用者確認。**
+> **🔗 跨中心關係**：唯讀運算中心 (`river-quant-engine`) 寫入 Supabase B 的 `trade_signals`/`decision_log`/`arbiter_verdicts` 等表；不直接存取戰情室 Supabase。
 
 > **📝 更新規則**：核心鐵則變更 → 直接修改本檔案。每次功能開發/修復 → 追加寫入 `CHANGELOG.md`。
 

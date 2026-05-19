@@ -3,6 +3,10 @@ import FundCard from "./FundCard";
 
 export default function FundManager() {
   const [capital, setCapital] = useState("1000000");
+  const [commission, setCommission] = useState("0.1425");
+  const [tax, setTax] = useState("0.3");
+  const [slippage, setSlippage] = useState("0.1");
+  const [riskPerTrade, setRiskPerTrade] = useState("2.0");
 
   return (
     <div className="p-4 space-y-4">
@@ -17,23 +21,23 @@ export default function FundManager() {
       <div className="flex flex-wrap items-center gap-3 text-sm mt-4">
         <span className="text-slate-500 font-medium">⚙️ 參數設定</span>
         <div className="flex items-center gap-1 bg-white/60 rounded-lg px-3 py-1.5 border border-white/80">
-          <span className="text-slate-500">手續費</span>
-          <input className="w-16 text-right bg-transparent font-mono text-slate-900 outline-none" value="0.1425" />
+          <label className="text-slate-500 cursor-text">手續費</label>
+          <input title="手續費率" className="w-16 text-right bg-transparent font-mono text-slate-900 outline-none" value={commission} onChange={(e) => setCommission(e.target.value)} />
           <span className="text-slate-400">%</span>
         </div>
         <div className="flex items-center gap-1 bg-white/60 rounded-lg px-3 py-1.5 border border-white/80">
-          <span className="text-slate-500">交易稅</span>
-          <input className="w-14 text-right bg-transparent font-mono text-slate-900 outline-none" value="0.3" />
+          <label className="text-slate-500 cursor-text">交易稅</label>
+          <input title="交易稅率" className="w-14 text-right bg-transparent font-mono text-slate-900 outline-none" value={tax} onChange={(e) => setTax(e.target.value)} />
           <span className="text-slate-400">%</span>
         </div>
         <div className="flex items-center gap-1 bg-white/60 rounded-lg px-3 py-1.5 border border-white/80">
-          <span className="text-slate-500">滑價</span>
-          <input className="w-14 text-right bg-transparent font-mono text-slate-900 outline-none" value="0.1" />
+          <label className="text-slate-500 cursor-text">滑價</label>
+          <input title="滑價百分比" className="w-14 text-right bg-transparent font-mono text-slate-900 outline-none" value={slippage} onChange={(e) => setSlippage(e.target.value)} />
           <span className="text-slate-400">%</span>
         </div>
         <div className="flex items-center gap-1 bg-white/60 rounded-lg px-3 py-1.5 border border-white/80">
-          <span className="text-slate-500">單筆風險</span>
-          <input className="w-14 text-right bg-transparent font-mono text-slate-900 outline-none" value="2.0" />
+          <label className="text-slate-500 cursor-text">單筆風險</label>
+          <input title="單筆交易風險上限" className="w-14 text-right bg-transparent font-mono text-slate-900 outline-none" value={riskPerTrade} onChange={(e) => setRiskPerTrade(e.target.value)} />
           <span className="text-slate-400">%</span>
         </div>
         <button className="bg-blue-600 text-white text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-blue-700 cursor-pointer">
