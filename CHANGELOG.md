@@ -14,6 +14,27 @@
 
 ---
 
+### 2026-05-26
+
+#### 🏗️ AI 模型遷移：DeepSeek → Gemini（無程式碼變更，前端自動適應）
+
+- **背景**：運算中心已完成 DeepSeek→Gemini 全代理人遷移（詳見運算中心 CHANGELOG.md）。模擬中心前端本身無需修改——`model_type` 欄位由運算中心的 `agent_id` 自動決定，辯論日誌 API 回傳的 `model_type` 已從 `deepseek` 變為 `gemini`。
+- **變更內容**：無需程式碼變更。前端 `AiDebatePanel.tsx` 的模型標籤渲染自動顯示新的 `model_type` 值。
+- **影響範圍**：無（前端自動適應）
+
+---
+
+### 2026-05-22
+
+#### 🔧 修復代理層間歇性 502 Bad Gateway — HTTP Keep-Alive 連線池 + 智慧重試（`server.ts`）
+
+- **背景**：Express `proxyToBackend` 每次請求建立新 TCP 連線（無 keep-alive），疊加 FastAPI 事件迴圈偶發阻塞，導致三層請求鏈（瀏覽器 → :3001 → :8000）在高併發或背景排程執行時拋出 502。
+- **變更內容**：
+  1. 🔧 [`server.ts`](server.ts:39) — 新增全域 `http.Agent` 連線池，啟用 HTTP Keep-Alive（maxSockets=32、keepAliveMsecs=30s），避免每次代理請求重建 TCP 連線。
+  2. 🔧 [`server.ts`](server.ts:47) — `proxyToBackend` 重構：加入 2 次智慧重試（間隔 600ms），GET 冪等安全重試，PUT/POST 僅在後端回 502/503/504 時重試。
+  3. 🔧 逾時從 30 秒降至 25 秒（配合 FastAPI 端 25 秒 `_run_in_thread` 逾時，形成防禦梯度）。
+- **影響範圍**：`server.ts`
+
 ### 2026-05-15
 
 #### 🏗️ 全端頁面架構完整實作 — 12 頁面 + 15 組件（`src/pages/`, `src/components/`）
