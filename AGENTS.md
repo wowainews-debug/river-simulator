@@ -7,6 +7,63 @@
 
 > **📝 更新規則**：核心鐵則變更 → 直接修改本檔案。每次功能開發/修復 → 追加寫入 `CHANGELOG.md`。
 
+## 📂 專案結構
+
+```
+river-simulator/
+├── .env                        # Supabase B 連線設定
+├── .gitignore
+├── AGENTS.md                   # 本檔案（AI 核心記憶體）
+├── CHANGELOG.md                # 變更紀錄（工作日誌）
+├── index.html                  # 入口 HTML
+├── package.json                # Node 依賴
+├── package-lock.json
+├── tsconfig.json               # TypeScript 設定
+├── vite.config.ts              # Vite 建置設定
+├── server.ts                   # 🖥️ Express 代理伺服器（SSE + API 代理）
+│
+├── public/                     # 靜態資源
+│
+└── src/                        # ⚛️ 前端 React TypeScript
+    ├── App.tsx                 # 應用根元件
+    ├── main.tsx                # React 入口
+    ├── index.css               # Tailwind CSS + 全域樣式
+    ├── vite-env.d.ts           # Vite 型別宣告
+    ├── components/             # UI 元件
+    │   ├── AgentCard.tsx       # AI 代理人卡片
+    │   ├── AssetTabs.tsx       # 資產切換頁籤
+    │   ├── AssetTogglePanel.tsx # 資產切換面板
+    │   ├── DebateSessionCard.tsx # 辯論會議卡片
+    │   ├── DefenseLine2Panel.tsx # 防護線層級 2
+    │   ├── DefenseLine3Panel.tsx # 防護線層級 3
+    │   ├── ErrorBoundary.tsx   # 全站錯誤邊界
+    │   ├── FundCard.tsx        # 資金卡片
+    │   ├── FundManager.tsx     # 資金管理員
+    │   ├── FuturesChart.tsx    # 台指期 K 線圖
+    │   ├── KpiCard.tsx         # KPI 指標卡片
+    │   ├── KpiDashboard.tsx    # KPI 儀表板
+    │   ├── SignalSection.tsx   # 訊號區塊
+    │   ├── SignalTable.tsx     # 訊號表格
+    │   ├── SniperTargetList.tsx # 狙擊目標清單
+    │   ├── TopNavBar.tsx       # 頂部導覽列
+    │   ├── TradingViewWidget.tsx # TradingView 圖表嵌入
+    │   └── Tooltip.tsx         # 通用提示框
+    ├── lib/                    # 工具庫
+    │   └── api.ts              # API 客戶端
+    └── pages/                  # 頁面路由
+        ├── Dashboard.tsx       # 🏠 模擬持倉總覽
+        ├── Signals.tsx         # 🎯 訊號監控
+        ├── SignalDetail.tsx    # 📊 單檔訊號明細
+        ├── Orders.tsx          # 📋 委託記錄
+        ├── Futures.tsx         # 📉 台指期監控
+        ├── ComputeStocks.tsx   # 🧠 個股運算中心
+        ├── ComputeFutures.tsx  # 📈 期貨運算中心
+        ├── ParamPanel.tsx      # 🔧 參數調教面板
+        ├── Settings.tsx        # ⚙️ 模擬設定
+        ├── SystemStatus.tsx    # 🏥 系統狀態
+        └── DebateMonitor.tsx   # 🗳️ AI 辯論監控
+```
+
 ---
 
 ## 1. 核心架構鐵則
