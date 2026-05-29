@@ -16,7 +16,7 @@ export default function SystemStatusPage() {
   const [activeTab, setActiveTab] = useState<"modules" | "logs" | "debate">("modules");
 
   const refresh = useCallback(async () => {
-    if (activeTab === "debate") return; // 辯論頁有自己獨立的 5s 輪詢
+    if (activeTab === "debate") return;
     setLoading(true);
     try {
       const [mod, log] = await Promise.all([
@@ -35,14 +35,9 @@ export default function SystemStatusPage() {
   useEffect(() => {
     if (activeTab === "debate") return;
     refresh();
-    const t = setInterval(refresh, 30_000); // 每 30 秒自動更新
+    const t = setInterval(refresh, 30_000);
     return () => clearInterval(t);
   }, [refresh]);
-
-  // 首次載入
-  useEffect(() => {
-    refresh();
-  }, []);
 
   if (activeTab !== "debate" && loading && !modules) {
     return <div className="max-w-7xl mx-auto py-12 px-4 text-center text-slate-400">⏳ 載入系統狀態...</div>;

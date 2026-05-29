@@ -63,11 +63,12 @@ export default function DebateSessionCard({ session, defaultExpanded = false }: 
   const assetIcon = getAssetIcon(session.asset_type);
   const tradeLabel = getTradeModeLabel(session.trade_mode, session.asset_type);
 
-  // 分組訊息
+  // 分組訊息（防禦性：後端預設不附 messages 以加速列表回應）
   const { round1, round2, arbiter } = useMemo(() => {
-    const r1 = session.messages.filter((m) => m.round === 1);
-    const r2 = session.messages.filter((m) => m.round === 2);
-    const arb = session.messages.find((m) => m.round === 3);
+    const msgs = session.messages || [];
+    const r1 = msgs.filter((m) => m.round === 1);
+    const r2 = msgs.filter((m) => m.round === 2);
+    const arb = msgs.find((m) => m.round === 3);
     return { round1: r1, round2: r2, arbiter: arb };
   }, [session.messages]);
 
@@ -216,7 +217,7 @@ export default function DebateSessionCard({ session, defaultExpanded = false }: 
           )}
 
           {/* 無訊息時 */}
-          {session.messages.length === 0 && (
+          {(session.messages || []).length === 0 && (
             <p className="text-xs text-slate-400 text-center py-4">
               （尚無代理人輸出，可能辯論未完成或存檔失敗）
             </p>

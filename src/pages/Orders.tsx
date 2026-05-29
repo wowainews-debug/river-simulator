@@ -6,10 +6,12 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let disposed = false;
     fetchPositions()
-      .then((res) => setPositions(res.positions))
-      .catch(console.error)
-      .finally(() => setLoading(false));
+      .then((res) => { if (!disposed) setPositions(res.positions); })
+      .catch(e => { if (!disposed) console.error(e); })
+      .finally(() => { if (!disposed) setLoading(false); });
+    return () => { disposed = true; };
   }, []);
 
   if (loading) {

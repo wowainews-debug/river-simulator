@@ -162,6 +162,9 @@ export default function AgentCard({ message, isExpanded, onToggle }: Props) {
             <div>
               <div className="text-[10px] font-medium text-slate-500 mb-0.5">
                 📝 推理理由
+                {message.has_full_rationale && (
+                  <span className="text-amber-500 ml-1">（前100字，點擊場次卡片查完整內容）</span>
+                )}
               </div>
               <p className="text-xs text-slate-700 leading-relaxed whitespace-pre-wrap">
                 {message.rationale}

@@ -4,7 +4,7 @@
  * 顯示運算中心產出的所有 AI 辯論記錄。
  * 支援 5 秒輪詢、篩選（標的/模式/裁定）、手風琴展開。
  */
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import type { DebateSession } from "../lib/api";
 import { fetchDebateLogs } from "../lib/api";
 import DebateSessionCard from "../components/DebateSessionCard";
@@ -26,8 +26,11 @@ export default function DebateMonitor() {
     assetType: "",
     verdict: "",
   });
+  const loadingRef = useRef(false);
 
   const load = useCallback(async () => {
+    if (loadingRef.current) return;
+    loadingRef.current = true;
     try {
       setLoading(true);
       setError("");
@@ -45,6 +48,7 @@ export default function DebateMonitor() {
       console.error("辯論日誌載入失敗:", e);
     } finally {
       setLoading(false);
+      loadingRef.current = false;
     }
   }, [filters]);
 
@@ -52,7 +56,7 @@ export default function DebateMonitor() {
   useEffect(() => {
     load();
     const timer = setInterval(load, 5000);
-    return () => clearInterval(timer);
+    return () => { clearInterval(timer); loadingRef.current = false; };
   }, [load]);
 
   return (

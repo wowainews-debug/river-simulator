@@ -1,6 +1,4 @@
 import { useState, useEffect } from "react";
-import type { SimConfig } from "../lib/api";
-import { fetchSimConfig } from "../lib/api";
 
 interface StrategyParam {
   strategy_name: string;
@@ -17,17 +15,23 @@ interface StockReport {
   strategies: StrategyParam[];
 }
 
+const API_BASE = "/api/v1";
+
 export default function ComputeStocks() {
   const [stocks, setStocks] = useState<StockReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetch("/api/v1/optimizer/stock-report")
+    let disposed = false;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 15_000);
+    fetch(`${API_BASE}/optimizer/stock-report`, { signal: controller.signal })
       .then(r => r.json())
-      .then(data => setStocks(data.stocks || []))
-      .catch(e => setError(e.message))
-      .finally(() => setLoading(false));
+      .then(data => { if (!disposed) setStocks(data.stocks || []); })
+      .catch(e => { if (!disposed && !(e instanceof DOMException && e.name === "AbortError")) setError(e.message); })
+      .finally(() => { clearTimeout(timer); if (!disposed) setLoading(false); });
+    return () => { disposed = true; controller.abort(); };
   }, []);
 
   if (loading) return <div className="max-w-7xl mx-auto py-12 px-4 text-center text-slate-400">⏳ 載入個股回測數據...</div>;

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { fetchFuturesQuote, fetchSimConfig, FuturesQuote, SimConfig } from "../lib/api";
 import FuturesChart from "../components/FuturesChart";
 
@@ -7,8 +7,11 @@ export default function FuturesPage() {
   const [simConfig, setSimConfig] = useState<SimConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const loadingRef = useRef(false);
 
   const loadQuote = useCallback(async () => {
+    if (loadingRef.current) return;
+    loadingRef.current = true;
     try {
       setError("");
       const [data, cfg] = await Promise.all([
@@ -21,13 +24,14 @@ export default function FuturesPage() {
       setError(e.message);
     } finally {
       setLoading(false);
+      loadingRef.current = false;
     }
   }, []);
 
   useEffect(() => {
     loadQuote();
-    const t = setInterval(loadQuote, 60_000); // 每 60 秒自動更新
-    return () => clearInterval(t);
+    const t = setInterval(loadQuote, 60_000);
+    return () => { clearInterval(t); loadingRef.current = false; };
   }, [loadQuote]);
 
   if (loading) {

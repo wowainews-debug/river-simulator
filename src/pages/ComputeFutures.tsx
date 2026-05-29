@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import FuturesChart from "../components/FuturesChart";
 
 interface BacktestResult {
@@ -28,16 +28,32 @@ export default function ComputeFutures() {
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<BacktestResult | null>(null);
   const [error, setError] = useState("");
+  const abortRef = useRef<AbortController | null>(null);
 
   async function runBacktest() {
     try { setRunning(true); setError("");
+      if (abortRef.current) abortRef.current.abort();
+      abortRef.current = new AbortController();
+      const timer = setTimeout(() => abortRef.current?.abort(), 30_000);
       const res = await fetch("/api/v1/optimizer/futures-backtest", {
         method: "POST", headers: { "Content-Type": "application/json" },
+        signal: abortRef.current.signal,
         body: JSON.stringify({ days_back: days, params: { trend_detector: sim.trend } }),
       });
-      if (!res.ok) throw new Error((await res.json()).detail || `HTTP ${res.status}`);
+      clearTimeout(timer);
+      if (!res.ok) {
+        let detail = `HTTP ${res.status}`;
+        try { const errBody = await res.json(); detail = errBody.detail || detail; } catch {}
+        throw new Error(detail);
+      }
       setResult(await res.json());
-    } catch (e: any) { setError(e.message); }
+    } catch (e: any) {
+      if (e instanceof DOMException && e.name === "AbortError") {
+        setError("請求逾時（30 秒內未回應），請檢查後端引擎是否正常運作");
+        return;
+      }
+      setError(e.message);
+    }
     finally { setRunning(false); }
   }
 

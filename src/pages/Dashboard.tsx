@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import EquityCurveChart from "../components/EquityCurveChart";
-import { fetchPerformance, fetchTargets, fetchTodaySignals, fetchHealth, fetchSimConfig, PerformanceData, TargetsResponse, TodaySignalsResponse, HealthStatus, SimConfig } from "../lib/api";
+import { fetchPerformance, fetchTargets, fetchTodaySignals, fetchHealth, fetchSimConfig, fetchArbiterReport, PerformanceData, TargetsResponse, TodaySignalsResponse, HealthStatus, SimConfig, ArbiterReport } from "../lib/api";
 
 export default function Dashboard() {
   const [performance, setPerformance] = useState<PerformanceData | null>(null);
@@ -8,34 +8,41 @@ export default function Dashboard() {
   const [signals, setSignals] = useState<TodaySignalsResponse | null>(null);
   const [health, setHealth] = useState<HealthStatus | null>(null);
   const [simConfig, setSimConfig] = useState<SimConfig | null>(null);
+  const [arbiterReport, setArbiterReport] = useState<ArbiterReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let disposed = false;
     async function loadAll() {
       try {
         setLoading(true);
-        const [perf, tgt, sig, h, cfg] = await Promise.all([
+        const [perf, tgt, sig, h, cfg, arb] = await Promise.all([
           fetchPerformance(),
           fetchTargets(),
           fetchTodaySignals(),
           fetchHealth(),
-          fetchSimConfig().then(r => r.config).catch(() => null), // 不因設定載入失敗阻擋 Dashboard
+          fetchSimConfig().then(r => r.config).catch(() => null),
+          fetchArbiterReport().catch(() => null),
         ]);
+        if (disposed) return;
         setPerformance(perf);
         setTargets(tgt);
         setSignals(sig);
         setHealth(h);
         setSimConfig(cfg);
+        setArbiterReport(arb);
         setError(null);
       } catch (e: any) {
+        if (disposed) return;
         console.error("API 載入失敗:", e);
         setError(e.message || "無法連線至運算核心 (Port 8000)");
       } finally {
-        setLoading(false);
+        if (!disposed) setLoading(false);
       }
     }
     loadAll();
+    return () => { disposed = true; };
   }, []);
 
   // ── 載入中 ──
@@ -180,6 +187,132 @@ export default function Dashboard() {
       <div className="px-4 mt-6">
         <EquityCurveChart data={performance?.pnl_history} />
       </div>
+
+      {/* ── 🏛️ 超級仲裁官審查報告 ── */}
+      {arbiterReport?.summary && (
+        <div className="px-4 mt-6">
+          <div className="bg-white border border-slate-200/80 rounded-xl p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-bold text-slate-900">🏛️ 超級仲裁官審查報告</h3>
+              <span className="text-xs text-slate-400">{arbiterReport.date} · {arbiterReport.summary.fubon_order_payload?.session ?? "--"}</span>
+            </div>
+
+            {/* 摘要 */}
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-4">
+              <div className="bg-slate-50 rounded-lg p-3">
+                <div className="text-xs text-slate-500">總權益</div>
+                <div className="text-lg font-bold font-mono">${(arbiterReport.summary.fubon_order_payload?.total_equity ?? 0).toLocaleString()}</div>
+              </div>
+              <div className="bg-slate-50 rounded-lg p-3">
+                <div className="text-xs text-slate-500">可用資金</div>
+                <div className="text-lg font-bold font-mono">${(arbiterReport.summary.fubon_order_payload?.available_capital ?? 0).toLocaleString()}</div>
+              </div>
+              <div className="bg-blue-50 rounded-lg p-3">
+                <div className="text-xs text-blue-500">已分配</div>
+                <div className="text-lg font-bold font-mono text-blue-700">${(arbiterReport.summary.fubon_order_payload?.allocated_total ?? 0).toLocaleString()}</div>
+              </div>
+              <div className="bg-slate-50 rounded-lg p-3">
+                <div className="text-xs text-slate-500">剩餘資金</div>
+                <div className="text-lg font-bold font-mono">${(arbiterReport.summary.fubon_order_payload?.remaining_capital ?? 0).toLocaleString()}</div>
+              </div>
+              <div className={arbiterReport.summary.fubon_order_payload?.fallback_used ? "bg-amber-50 rounded-lg p-3" : "bg-emerald-50 rounded-lg p-3"}>
+                <div className="text-xs text-slate-500">核准/否決</div>
+                <div className="text-lg font-bold font-mono">
+                  {arbiterReport.summary.fubon_order_payload?.approved_count ?? 0}
+                  <span className="text-slate-400 text-sm font-normal"> / </span>
+                  {arbiterReport.summary.fubon_order_payload?.rejected_count ?? 0}
+                </div>
+                {arbiterReport.summary.fubon_order_payload?.fallback_used && (
+                  <div className="text-[10px] text-amber-600 font-medium">⚠️ 降級方案 (無 AI 審查)</div>
+                )}
+              </div>
+            </div>
+
+            {/* 分配邏輯 */}
+            {arbiterReport.summary.fubon_order_payload?.allocation_rationale && (
+              <div className="mb-4">
+                <div className="text-xs font-medium text-slate-500 mb-1">分配邏輯</div>
+                <div className="text-sm text-slate-700 bg-slate-50 rounded-lg p-3">{arbiterReport.summary.fubon_order_payload.allocation_rationale}</div>
+              </div>
+            )}
+
+            {/* 風險評估 */}
+            {arbiterReport.summary.fubon_order_payload?.risk_assessment && (
+              <div className="mb-4">
+                <div className="text-xs font-medium text-slate-500 mb-1">風險評估</div>
+                <div className="text-sm text-slate-700 bg-amber-50 rounded-lg p-3">{arbiterReport.summary.fubon_order_payload.risk_assessment}</div>
+              </div>
+            )}
+
+            {/* 核准明細 */}
+            {arbiterReport.approved_signals && arbiterReport.approved_signals.length > 0 && (
+              <div className="mb-3">
+                <div className="text-xs font-medium text-slate-500 mb-2">✅ 核准訊號</div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs text-left">
+                    <thead className="text-[10px] uppercase bg-slate-50 text-slate-500 border-b">
+                      <tr>
+                        <th className="px-2 py-1.5">#</th>
+                        <th className="px-2 py-1.5">標的</th>
+                        <th className="px-2 py-1.5">方向</th>
+                        <th className="px-2 py-1.5">進場</th>
+                        <th className="px-2 py-1.5">停損</th>
+                        <th className="px-2 py-1.5">目標</th>
+                        <th className="px-2 py-1.5">口數</th>
+                        <th className="px-2 py-1.5">分配資金</th>
+                        <th className="px-2 py-1.5">R/R</th>
+                        <th className="px-2 py-1.5">原因</th>
+                      </tr>
+                    </thead>
+                    <tbody className="text-slate-700">
+                      {arbiterReport.approved_signals.map((s: any, i: number) => {
+                        const pld = s.fubon_order_payload || {};
+                        return (
+                          <tr key={i} className="border-b border-slate-100">
+                            <td className="px-2 py-1.5 text-slate-400">{pld.priority_rank ?? i + 1}</td>
+                            <td className="px-2 py-1.5 font-medium">{s.stock_symbol}</td>
+                            <td className="px-2 py-1.5">
+                              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                                s.signal_type === "BUY" ? "bg-rose-100 text-rose-600" : "bg-emerald-100 text-emerald-600"
+                              }`}>{s.signal_type}</span>
+                            </td>
+                            <td className="px-2 py-1.5 font-mono">{s.entry_price ?? "--"}</td>
+                            <td className="px-2 py-1.5 font-mono text-rose-500">{s.stop_loss_price ?? "--"}</td>
+                            <td className="px-2 py-1.5 font-mono text-emerald-500">{s.take_profit_price ?? "--"}</td>
+                            <td className="px-2 py-1.5 font-mono">{pld.quantity ?? "--"}</td>
+                            <td className="px-2 py-1.5 font-mono">${(pld.allocated_capital ?? 0).toLocaleString()}</td>
+                            <td className="px-2 py-1.5 font-mono">{pld.risk_reward_ratio ?? "--"}</td>
+                            <td className="px-2 py-1.5 text-slate-400 max-w-[120px] truncate" title={pld.approval_reason || ""}>{pld.approval_reason || ""}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* 否決明細 */}
+            {arbiterReport.rejected_signals && arbiterReport.rejected_signals.length > 0 && (
+              <div>
+                <div className="text-xs font-medium text-slate-500 mb-2">❌ 否決訊號</div>
+                <div className="space-y-1">
+                  {arbiterReport.rejected_signals.map((s: any, i: number) => {
+                    const pld = s.fubon_order_payload || {};
+                    return (
+                      <div key={i} className="flex items-center gap-2 text-sm bg-rose-50 rounded-lg px-3 py-2">
+                        <span className="font-medium text-slate-900">{s.stock_symbol}</span>
+                        <span className="text-xs text-rose-600">{(pld.asset_type ?? s.asset_type) === "futures" ? "📈" : "📊"}</span>
+                        <span className="text-xs text-rose-500">{pld.rejection_reason || "未知原因"}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

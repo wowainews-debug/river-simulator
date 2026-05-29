@@ -9,10 +9,12 @@ export default function ParamPanel() {
 
   useEffect(() => {
     if (!symbol) return;
+    let disposed = false;
     fetchParams(symbol)
-      .then(setData)
-      .catch(console.error)
-      .finally(() => setLoading(false));
+      .then(data => { if (!disposed) setData(data); })
+      .catch(e => { if (!disposed) console.error(e); })
+      .finally(() => { if (!disposed) setLoading(false); });
+    return () => { disposed = true; };
   }, [symbol]);
 
   if (loading) {

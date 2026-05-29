@@ -13,13 +13,16 @@ export default function SettingsPage() {
   const [savedMsg, setSavedMsg] = useState("");
   const [dirty, setDirty] = useState(false);
 
-  useEffect(() => { loadConfig(); }, []);
-
-  async function loadConfig() {
-    try { setLoading(true); const res = await fetchSimConfig(); setConfig(res.config); }
-    catch (e: unknown) { setError(e instanceof Error ? e.message : "載入設定失敗"); }
-    finally { setLoading(false); }
-  }
+  useEffect(() => {
+    let disposed = false;
+    loadConfig();
+    return () => { disposed = true; };
+    async function loadConfig() {
+      try { setLoading(true); const res = await fetchSimConfig(); if (!disposed) setConfig(res.config); }
+      catch (e: unknown) { if (!disposed) setError(e instanceof Error ? e.message : "載入設定失敗"); }
+      finally { if (!disposed) setLoading(false); }
+    }
+  }, []);
 
   const handleChange = useCallback((key: keyof SimConfig, value: boolean | number | string) => {
     setConfig((prev) => {

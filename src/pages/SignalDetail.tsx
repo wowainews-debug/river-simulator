@@ -10,10 +10,12 @@ export default function SignalDetail() {
 
   useEffect(() => {
     if (!symbol) return;
+    let disposed = false;
     fetchSignalDetail(symbol)
-      .then(setData)
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
+      .then(data => { if (!disposed) setData(data); })
+      .catch((e) => { if (!disposed) setError(e.message); })
+      .finally(() => { if (!disposed) setLoading(false); });
+    return () => { disposed = true; };
   }, [symbol]);
 
   if (loading) {

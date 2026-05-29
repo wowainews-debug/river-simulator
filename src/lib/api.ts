@@ -7,7 +7,7 @@
 const API_BASE = "/api/v1";  // 走 Vite proxy → localhost:8000/api/v1，零 CORS 問題
 
 /** 預設請求超時 (ms)，防止後端掛死導致前端永久卡住 */
-const DEFAULT_TIMEOUT_MS = 15_000;
+const DEFAULT_TIMEOUT_MS = 45_000;
 
 // ── 通用 fetch 封裝（含超時保護）──────────────────────
 async function fetchApi<T>(path: string, options?: RequestInit, timeoutMs = DEFAULT_TIMEOUT_MS): Promise<T> {
@@ -283,7 +283,9 @@ export interface DebateMessage {
   model_type: "gemini" | "deepseek";
   direction: "BUY" | "SELL" | "HOLD";
   confidence: number;
+  /** 列表端點回傳前 100 字截斷，has_full_rationale=true 時點擊查完整內容 */
   rationale: string;
+  has_full_rationale?: boolean;
   risk_factor?: string;
   opinion_changed?: boolean;
   entry_price?: number;
@@ -304,7 +306,9 @@ export interface DebateSession {
   overall_verdict: "PROCEED" | "ABSTAIN";
   consensus: "BUY" | "SELL" | "HOLD";
   consensus_score: number;
-  messages: DebateMessage[];
+  /** 🔧 列表端點預設不含 messages（加速），前端點擊後從 /logs/{id} 載入細節 */
+  messages?: DebateMessage[];
+  message_count?: number;
 }
 
 export interface DebateLogsResponse {
@@ -383,4 +387,36 @@ export interface FuturesQuote {
 
 export async function fetchFuturesQuote(): Promise<FuturesQuote> {
   return fetchApi<FuturesQuote>("/simulator/futures-quote");
+}
+
+// ═══════════════════════════════════════════════════════
+// 🏛️ 超級仲裁官報告
+// ═══════════════════════════════════════════════════════
+
+export interface ArbiterSummary {
+  total_equity: number;
+  available_capital: number;
+  allocated_total: number;
+  remaining_capital: number;
+  allocation_rationale: string;
+  risk_assessment: string;
+  approved_count: number;
+  rejected_count: number;
+  fallback_used: boolean;
+  mode: string;
+  session: string;
+}
+
+export interface ArbiterReport {
+  status: string;
+  date: string;
+  summary: {
+    fubon_order_payload: ArbiterSummary;
+  } | null;
+  approved_signals: any[];
+  rejected_signals: any[];
+}
+
+export async function fetchArbiterReport(): Promise<ArbiterReport> {
+  return fetchApi<ArbiterReport>("/signals/arbiter-report");
 }
